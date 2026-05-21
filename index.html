@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1c1a17">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Diário Obra">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Diário de Obra</title>
+<style>
+/* ===================== RESET + VARIÁVEIS ===================== */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f5f2ec;--card:#fff;--borda:#ddd8ce;--texto:#1c1a17;--sec:#6e6860;
+  --laranja:#c17f3a;--laranja-lt:#fdf3e7;--laranja-bd:#e8a95a;
+  --verde:#2e7d5c;--verde-lt:#edf7f2;
+  --vermelho:#c0392b;--vermelho-lt:#fdf2f2;
+  --amarelo:#d4881a;--amarelo-lt:#fef8ec;
+  --azul:#4a7fa5;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --r:10px;--rl:14px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;background:var(--bg);color:var(--texto);overscroll-behavior:none}
+html{height:-webkit-fill-available}
+body{min-height:-webkit-fill-available}
+button,input,select,textarea{font-family:inherit;-webkit-appearance:none;appearance:none}
+input,select,textarea{font-size:16px!important} /* evita zoom iOS */
+a{color:inherit;text-decoration:none}
+
+/* ===================== SPLASH ===================== */
+#splash{position:fixed;inset:0;background:#1c1a17;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s}
+#splash.hide{opacity:0;pointer-events:none}
+.sp-icon{width:72px;height:72px;background:var(--laranja);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 8px 24px rgba(193,127,58,.4)}
+.sp-title{color:#fff;font-size:22px;font-weight:700;letter-spacing:.3px}
+.sp-sub{color:#777;font-size:13px;margin-top:5px}
+.sp-bar{width:140px;height:3px;background:#333;border-radius:2px;margin-top:32px;overflow:hidden}
+.sp-fill{height:100%;width:0;background:var(--laranja);border-radius:2px;animation:fill .9s ease forwards .3s}
+@keyframes fill{to{width:100%}}
+
+/* ===================== TELAS ===================== */
+.tela{display:none;min-height:100vh;flex-direction:column}
+.tela.ativa{display:flex}
+
+/* ===================== HEADER ===================== */
+.header{background:#1c1a17;color:#fff;display:flex;align-items:flex-end;padding:calc(var(--sat) + 10px) 16px 12px;gap:10px;position:sticky;top:0;z-index:50;min-height:calc(56px + var(--sat));flex-shrink:0}
+.header-logo{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.header-logo-icon{width:30px;height:30px;background:var(--laranja);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-title{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-sub{font-size:11px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-date{font-size:11px;color:#888;white-space:nowrap;flex-shrink:0}
+.btn-back{background:rgba(255,255,255,.12);border:none;color:#fff;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;min-height:36px}
+.btn-back:active{background:rgba(255,255,255,.22)}
+
+/* ===================== BOTTOM NAV ===================== */
+.bottom-nav{background:#fff;border-top:1px solid var(--borda);display:flex;padding-bottom:var(--sab);flex-shrink:0;position:sticky;bottom:0;z-index:50}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 8px;cursor:pointer;color:var(--sec);transition:color .15s;position:relative;border:none;background:none;min-height:54px}
+.bnav-item.ativo{color:var(--laranja)}
+.bnav-item svg{width:22px;height:22px;stroke-width:1.8}
+.bnav-label{font-size:10px;font-weight:500;margin-top:3px}
+.bnav-badge{position:absolute;top:8px;right:calc(50% - 18px);background:var(--vermelho);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center}
+
+/* ===================== SCROLL CONTENT ===================== */
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page{display:none;padding:16px;max-width:700px;margin:0 auto;padding-bottom:20px}
+.page.ativa{display:block}
+
+/* ===================== CARDS ===================== */
+.card{background:var(--card);border:1px solid var(--borda);border-radius:var(--rl);padding:16px;margin-bottom:14px}
+.card-head{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--sec);margin-bottom:13px;display:flex;align-items:center;gap:6px}
+.card-head svg{width:14px;height:14px;flex-shrink:0}
+
+/* ===================== FORM ===================== */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--sec);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:16px!important;color:var(--texto);background:var(--bg);transition:border-color .15s;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--laranja);background:#fff}
+.field textarea{resize:none;min-height:80px;line-height:1.5}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:480px){.grid2,.grid3{grid-template-columns:1fr}}
+
+/* ===================== BOTÕES ===================== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;min-height:44px;touch-action:manipulation}
+.btn-primary{background:var(--laranja);color:#fff}.btn-primary:active{background:#a86e2f}
+.btn-ghost{background:transparent;color:var(--texto);border:1.5px solid var(--borda)}.btn-ghost:active{background:var(--bg)}
+.btn-danger{background:transparent;color:var(--vermelho);border:1.5px solid #e8c0bd;font-size:12px;padding:7px 12px;min-height:36px}.btn-danger:active{background:var(--vermelho-lt)}
+.btn-success{background:var(--verde);color:#fff;font-size:12px;padding:7px 12px;min-height:36px}.btn-success:active{background:#256347}
+.btn-sm{font-size:12px;padding:7px 12px;min-height:36px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn-row.right{justify-content:flex-end}
+.btn svg{width:16px;height:16px;flex-shrink:0}
+
+/* ===================== CLIMA ===================== */
+.clima-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.clima-btn{padding:12px 6px;border:2px solid var(--borda);border-radius:var(--r);background:var(--bg);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--sec);transition:all .15s;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.clima-btn span{font-size:22px}
+.clima-btn.on-sol{border-color:#e8a030;background:#fff8ee;color:#c87800}
+.clima-btn.on-parcial{border-color:#c88a20;background:#fdf5e3;color:#a06800}
+.clima-btn.on-nublado{border-color:#7a8a9a;background:#f4f6f8;color:#4a5a6a}
+.clima-btn.on-chuva{border-color:#4a7fa5;background:#eef4f9;color:#2a5f85}
+
+/* ===================== SERVIÇOS ===================== */
+.srv-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--bg);border-radius:var(--r);margin-bottom:8px;border:1px solid var(--borda)}
+.srv-check{width:20px;height:20px;accent-color:var(--laranja);margin-top:2px;flex-shrink:0;cursor:pointer}
+.srv-body{flex:1;min-width:0}
+.srv-nome{font-size:14px;font-weight:500;line-height:1.3}
+.srv-det{font-size:12px;color:var(--sec);margin-top:2px}
+.srv-item.feito .srv-nome{text-decoration:line-through;color:var(--sec)}
+
+/* ===================== FOTO ===================== */
+.upload-area{border:2px dashed var(--borda);border-radius:var(--rl);padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
+.upload-area:active{border-color:var(--laranja);background:var(--laranja-lt)}
+.upload-icon{font-size:36px;margin-bottom:8px}
+.upload-txt{font-size:13px;color:var(--sec)}.upload-txt strong{color:var(--laranja)}
+.foto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:12px}
+.foto-wrap{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--bg);border:1px solid var(--borda)}
+.foto-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.foto-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1}
+#input-foto{display:none}
+.geo-info{margin-top:8px;font-size:12px;color:var(--sec);display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--borda)}
+
+/* ===================== REGISTROS HISTÓRICO ===================== */
+.reg-card{border-left:4px solid var(--laranja);background:var(--card);border-radius:0 var(--rl) var(--rl) 0;padding:14px;margin-bottom:10px;border-top:1px solid var(--borda);border-right:1px solid var(--borda);border-bottom:1px solid var(--borda)}
+.reg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.reg-data{font-size:13px;font-weight:700;color:var(--laranja)}
+.reg-resp{font-size:12px;color:var(--sec);margin-top:1px}
+.clima-pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
+.cp-sol{background:#fff8ee;color:#c87800}
+.cp-parcial{background:#fdf5e3;color:#a06800}
+.cp-nublado{background:#f4f6f8;color:#4a5a6a}
+.cp-chuva{background:#eef4f9;color:#2a5f85}
+.reg-srvs{margin:8px 0}
+.reg-srv-item{font-size:13px;color:var(--sec);padding:2px 0;display:flex;align-items:center;gap:6px}
+.reg-srv-item::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--laranja);flex-shrink:0}
+.reg-obs{font-size:13px;color:var(--sec);margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:8px;line-height:1.5}
+.fotos-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.fotos-row img{width:52px;height:52px;border-radius:7px;object-fit:cover;border:1px solid var(--borda);cursor:pointer}
+
+/* ===================== MATERIAIS ===================== */
+.mat-card{background:var(--card);border:1px solid var(--borda);border-radius:var(--rl);padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.mat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.mat-dot.pendente{background:var(--amarelo)}
+.mat-dot.urgente{background:var(--vermelho)}
+.mat-dot.comprado{background:var(--verde)}
+.mat-body{flex:1;min-width:0}
+.mat-nome{font-size:14px;font-weight:600;margin-bottom:3px}
+.mat-info{font-size:12px;color:var(--sec);margin-bottom:4px}
+.mat-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.prio-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.prio-alta{background:var(--vermelho-lt);color:var(--vermelho)}
+.prio-media{background:var(--amarelo-lt);color:var(--amarelo)}
+.prio-baixa{background:var(--verde-lt);color:var(--verde)}
+.mat-acoes{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+
+/* ===================== MÉTRICAS ===================== */
+.mets-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.met{background:var(--card);border:1px solid var(--borda);border-radius:var(--rl);padding:14px;text-align:center}
+.met-val{font-size:28px;font-weight:700;color:var(--laranja);font-variant-numeric:tabular-nums}
+.met-lbl{font-size:11px;color:var(--sec);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ===================== ALERTAS ===================== */
+.alerta{padding:11px 14px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;line-height:1.4}
+.al-warn{background:var(--amarelo-lt);color:#8a5000;border:1px solid #f5d4a0}
+.al-ok{background:var(--verde-lt);color:#1a5c3e;border:1px solid #a3d9be}
+.al-urg{background:var(--vermelho-lt);color:#7a1010;border:1px solid #e8c0bd}
+
+/* ===================== TELA OBRAS ===================== */
+.obras-intro{padding:20px 16px 12px;max-width:700px;margin:0 auto}
+.obras-titulo{font-size:20px;font-weight:700;margin-bottom:2px}
+.obras-sub{font-size:13px;color:var(--sec)}
+.obras-lista{padding:0 16px 80px;max-width:700px;margin:0 auto}
+.obra-card{background:var(--card);border:1px solid var(--borda);border-radius:var(--rl);padding:16px;margin-bottom:12px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;display:flex;align-items:flex-start;gap:12px}
+.obra-card:active{transform:scale(.98)}
+.obra-cor{width:5px;align-self:stretch;border-radius:3px;flex-shrink:0}
+.obra-info{flex:1;min-width:0}
+.obra-nome{font-size:16px;font-weight:700;margin-bottom:3px}
+.obra-end{font-size:12px;color:var(--sec);display:flex;align-items:center;gap:4px;margin-bottom:10px}
+.obra-stats{display:flex;gap:7px;flex-wrap:wrap}
+.obra-stat{font-size:11px;background:var(--bg);border:1px solid var(--borda);padding:3px 9px;border-radius:8px;color:var(--sec)}
+.obra-stat b{color:var(--laranja)}
+.obra-acoes-btn{background:none;border:none;padding:4px 8px;cursor:pointer;color:var(--sec);font-size:18px;line-height:1;position:absolute;top:12px;right:8px}
+.nova-obra-btn{background:var(--laranja-lt);border:2px dashed var(--laranja-bd);border-radius:var(--rl);padding:20px 16px;text-align:center;cursor:pointer;margin-bottom:12px;transition:all .18s}
+.nova-obra-btn:active{background:#fdecd6}
+.nova-obra-btn p{font-size:14px;font-weight:600;color:var(--laranja);margin-top:6px}
+
+/* ===================== MODAL ===================== */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-end;padding:0}
+.modal-bg.aberto{display:flex}
+@media(min-width:540px){.modal-bg{align-items:center;padding:20px}}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px 16px calc(16px + var(--sab));width:100%;max-width:540px;margin:0 auto;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media(min-width:540px){.modal{border-radius:16px;padding:24px}}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--sec);line-height:1;padding:4px;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center}
+.drag-handle{width:36px;height:4px;background:var(--borda);border-radius:2px;margin:0 auto 14px}
+
+/* ===================== FOTO MODAL ===================== */
+.foto-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;align-items:center;justify-content:center;padding:16px}
+.foto-modal.aberto{display:flex}
+.foto-modal img{max-width:100%;max-height:90vh;border-radius:10px;object-fit:contain}
+.foto-modal-close{position:absolute;top:calc(16px + var(--sat));right:16px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* ===================== FAB ===================== */
+#fab{display:none;position:fixed;bottom:calc(70px + var(--sab));right:16px;width:52px;height:52px;background:var(--laranja);color:#fff;border:none;border-radius:50%;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(193,127,58,.5);z-index:40;align-items:center;justify-content:center;transition:transform .12s}
+#fab.show{display:flex}
+#fab:active{transform:scale(.9)}
+
+/* ===================== BANNER INSTALAR ===================== */
+#install-banner{display:none;position:fixed;bottom:calc(12px + var(--sab));left:12px;right:12px;background:#1c1a17;color:#fff;border-radius:14px;padding:14px;z-index:100;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#install-banner.show{display:flex}
+.ib-text{flex:1;font-size:13px;line-height:1.4}
+.ib-text strong{color:var(--laranja);display:block;margin-bottom:2px}
+.ib-btns{display:flex;flex-direction:column;gap:6px}
+.ib-install{background:var(--laranja);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ib-later{background:none;border:none;color:#888;font-size:11px;cursor:pointer;padding:2px}
+
+/* ===================== UTILITÁRIOS ===================== */
+.vazio{text-align:center;padding:40px 16px;color:var(--sec)}
+.vazio-icon{font-size:48px;margin-bottom:10px;opacity:.3}
+.vazio p{font-size:14px}
+.divider{height:1px;background:var(--borda);margin:14px 0}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600}
+.tag-laranja{background:var(--laranja-lt);color:var(--laranja);border:1px solid var(--laranja-bd)}
+.section-title{font-size:17px;font-weight:700;margin-bottom:14px}
+.cor-picker{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0}
+.cor-op{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .12s}
+.cor-op.sel{border-color:rgba(0,0,0,.3);transform:scale(1.15)}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-icon">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+  </div>
+  <div class="sp-title">Diário de Obra</div>
+  <div class="sp-sub">Gestão completa da sua obra</div>
+  <div class="sp-bar"><div class="sp-fill"></div></div>
+</div>
+
+<!-- BANNER INSTALAÇÃO -->
+<div id="install-banner">
+  <div style="font-size:28px">📲</div>
+  <div class="ib-text"><strong>Instalar como App</strong>Acesso rápido, funciona offline</div>
+  <div class="ib-btns">
+    <button class="ib-install" onclick="instalarApp()">Instalar</button>
+    <button class="ib-later" onclick="dispensarBanner()">Agora não</button>
+  </div>
+</div>
+
+<!-- FAB -->
+<button id="fab" onclick="fabAction()">＋</button>
+
+<!-- ======================== TELA: LISTA DE OBRAS ======================== -->
+<div class="tela ativa" id="tela-obras">
+  <header class="header">
+    <div class="header-logo">
+      <div class="header-logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      </div>
+      <div>
+        <div class="header-title">Diário de Obra</div>
+      </div>
+    </div>
+    <div class="header-date" id="header-date"></div>
+  </header>
+
+  <div class="content">
+    <div class="obras-intro">
+      <div class="obras-titulo">Minhas Obras</div>
+      <div class="obras-sub">Toque em uma obra para acessar</div>
+      <!-- Resumo global -->
+      <div class="mets-grid" style="margin-top:14px" id="resumo-global"></div>
+    </div>
+    <div class="obras-lista" id="obras-lista"></div>
+  </div>
+</div>
+
+<!-- ======================== TELA: DENTRO DA OBRA ======================== -->
+<div class="tela" id="tela-obra">
+  <header class="header" id="obra-header">
+    <button class="btn-back" onclick="voltarObras()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15,18 9,12 15,6"/></svg>
+      Obras
+    </button>
+    <div class="header-logo" style="flex:1;min-width:0;margin-left:6px">
+      <div>
+        <div class="header-title" id="obra-header-nome">—</div>
+        <div class="header-sub" id="obra-header-end">—</div>
+      </div>
+    </div>
+    <div id="obra-header-cor" style="width:12px;height:12px;border-radius:50%;background:var(--laranja);flex-shrink:0"></div>
+  </header>
+
+  <div class="content" id="obra-content">
+    <!-- PÁGINA: PAINEL -->
+    <div class="page ativa" id="pg-painel">
+      <div class="mets-grid" id="obra-mets"></div>
+      <div id="obra-alertas"></div>
+      <div class="card">
+        <div class="card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          Últimos Registros
+        </div>
+        <div id="painel-ultimos"></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/></svg>
+          Materiais Pendentes
+        </div>
+        <div id="painel-mats"></div>
+      </div>
+    </div>
+
+    <!-- PÁGINA: NOVO REGISTRO -->
+    <div class="page" id="pg-registro">
+      <div class="section-title">Novo Registro</div>
+
+      <div class="card">
+        <div class="card-head">Identificação do Dia</div>
+        <div class="grid2">
+          <div class="field"><label>Data *</label><input type="date" id="r-data"></div>
+          <div class="field"><label>Responsável</label><input type="text" id="r-resp" placeholder="Mestre / Engenheiro"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+          Clima do Dia *
+        </div>
+        <div class="clima-grid">
+          <button class="clima-btn" onclick="setClima('sol',this)"><span>☀️</span>Ensolarado</button>
+          <button class="clima-btn" onclick="setClima('parcial',this)"><span>⛅</span>Parcial</button>
+          <button class="clima-btn" onclick="setClima('nublado',this)"><span>☁️</span>Nublado</button>
+          <button class="clima-btn" onclick="setClima('chuva',this)"><span>🌧️</span>Chuva</button>
+        </div>
+        <div class="grid2" style="margin-top:12px">
+          <div class="field"><label>Temperatura (°C)</label><input type="number" id="r-temp" placeholder="Ex: 26" min="-10" max="50"></div>
+          <div class="field"><label>Observação climática</label><input type="text" id="r-clima-obs" placeholder="Chuva à tarde..."></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Serviços Executados *
+        </div>
+        <div id="srvs-lista"></div>
+        <div class="grid2" style="margin-top:8px">
+          <input type="text" id="srv-nome-input" placeholder="Nome do serviço" style="padding:10px 12px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:16px;background:var(--bg);outline:none;width:100%">
+          <input type="text" id="srv-det-input" placeholder="Detalhes (opcional)" style="padding:10px 12px;border:1.5px solid var(--borda);border-radius:var(--r);font-size:16px;background:var(--bg);outline:none;width:100%">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" onclick="addServico()">+ Adicionar Serviço</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Fotos do Dia
+        </div>
+        <div class="upload-area" onclick="document.getElementById('input-foto').click()">
+          <div class="upload-icon">📷</div>
+          <div class="upload-txt"><strong>Toque para adicionar fotos</strong><br>As fotos recebem carimbo de data, hora e localização GPS</div>
+        </div>
+        <input type="file" id="input-foto" accept="image/*" multiple capture="environment" onchange="addFotos(event)">
+        <div class="geo-info" id="geo-info">
+          <span id="geo-ic">📍</span>
+          <span id="geo-txt">Aguardando localização GPS...</span>
+        </div>
+        <div class="foto-grid" id="fotos-form"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">Observações Gerais</div>
+        <div class="field"><textarea id="r-obs" placeholder="Ocorrências, visitas, problemas, anotações importantes..."></textarea></div>
+      </div>
+
+      <div class="btn-row right" style="margin-bottom:16px">
+        <button class="btn btn-ghost" onclick="limparForm()">Limpar</button>
+        <button class="btn btn-primary" onclick="salvarRegistro()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/></svg>
+          Salvar Registro
+        </button>
+      </div>
+    </div>
+
+    <!-- PÁGINA: DIÁRIO -->
+    <div class="page" id="pg-diario">
+      <div class="section-title">Diário da Obra</div>
+      <div class="card" style="padding:12px 14px;margin-bottom:14px">
+        <div class="grid2">
+          <div class="field" style="margin:0"><label>Filtrar por data</label><input type="date" id="fil-data" oninput="renderDiario()"></div>
+          <div class="field" style="margin:0"><label>Buscar serviço</label><input type="text" id="fil-srv" placeholder="Palavra-chave..." oninput="renderDiario()"></div>
+        </div>
+      </div>
+      <div id="diario-lista"></div>
+    </div>
+
+    <!-- PÁGINA: COMPRAS -->
+    <div class="page" id="pg-compras">
+      <div class="section-title">Lista de Compras</div>
+      <div class="card">
+        <div class="card-head">+ Nova Solicitação</div>
+        <div class="field"><label>Material / Produto *</label><input type="text" id="m-nome" placeholder="Ex: Parafuso GN 25 Ponta Agulha"></div>
+        <div class="grid2">
+          <div class="field"><label>Quantidade</label><input type="text" id="m-qtd" placeholder="Ex: 5000 unid"></div>
+          <div class="field"><label>Prioridade</label>
+            <select id="m-prio">
+              <option value="media">Média</option>
+              <option value="alta">🔴 Alta / Urgente</option>
+              <option value="baixa">Baixa</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Data necessária</label><input type="date" id="m-data"></div>
+          <div class="field"><label>Fornecedor sugerido</label><input type="text" id="m-forn" placeholder="Nome do fornecedor"></div>
+        </div>
+        <div class="field"><label>Especificações / Observações</label><textarea id="m-obs" placeholder="Marca, medidas, detalhes técnicos..." style="min-height:60px"></textarea></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="addMaterial()">+ Adicionar à Lista</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:7px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px">
+        <button class="btn btn-ghost btn-sm" id="f-todos" onclick="filtMat('todos',this)" style="border-bottom:2px solid var(--laranja)">Todos</button>
+        <button class="btn btn-ghost btn-sm" id="f-pendente" onclick="filtMat('pendente',this)">Pendentes</button>
+        <button class="btn btn-ghost btn-sm" id="f-urgente" onclick="filtMat('urgente',this)">Urgentes</button>
+        <button class="btn btn-ghost btn-sm" id="f-comprado" onclick="filtMat('comprado',this)">Comprados</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarLista()" style="margin-left:auto;white-space:nowrap">⬇ Exportar</button>
+      </div>
+      <div id="mats-lista"></div>
+    </div>
+  </div><!-- fim content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="bnav-item ativo" onclick="irPagina('painel',this)" data-page="painel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="bnav-label">Painel</span>
+    </button>
+    <button class="bnav-item" onclick="irPagina('registro',this)" data-page="registro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span class="bnav-label">Registrar</span>
+    </button>
+    <button class="bnav-item" onclick="irPagina('diario',this)" data-page="diario">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span class="bnav-label">Diário</span>
+    </button>
+    <button class="bnav-item" onclick="irPagina('compras',this)" data-page="compras">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="bnav-label">Compras</span>
+      <span class="bnav-badge" id="badge-compras" style="display:none">0</span>
+    </button>
+  </nav>
+</div><!-- fim tela-obra -->
+
+<!-- ======================== MODAIS ======================== -->
+
+<!-- Modal Nova/Editar Obra -->
+<div class="modal-bg" id="modal-obra" onclick="if(event.target===this)fecharModalObra()">
+  <div class="modal">
+    <div class="drag-handle"></div>
+    <div class="modal-title">
+      <span id="modal-obra-titulo">Nova Obra</span>
+      <button class="modal-close" onclick="fecharModalObra()">✕</button>
+    </div>
+    <div class="field"><label>Nome da Obra *</label><input type="text" id="o-nome" placeholder="Ex: Residência Família Souza"></div>
+    <div class="field"><label>Endereço completo</label><input type="text" id="o-end" placeholder="Rua, número, bairro, cidade - UF"></div>
+    <div class="grid2">
+      <div class="field"><label>Responsável</label><input type="text" id="o-resp" placeholder="Engenheiro / Mestre"></div>
+      <div class="field"><label>Tipo de obra</label>
+        <select id="o-tipo">
+          <option>Residencial</option><option>Comercial</option><option>Industrial</option>
+          <option>Reforma</option><option>Infraestrutura</option><option>Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Início previsto</label><input type="date" id="o-inicio"></div>
+      <div class="field"><label>Entrega prevista</label><input type="date" id="o-entrega"></div>
+    </div>
+    <div class="field"><label>Cor de identificação</label>
+      <div class="cor-picker" id="cor-picker">
+        <div class="cor-op sel" data-cor="#c17f3a" style="background:#c17f3a" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#2e7d5c" style="background:#2e7d5c" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#4a7fa5" style="background:#4a7fa5" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#8e44ad" style="background:#8e44ad" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#c0392b" style="background:#c0392b" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#1a6b8a" style="background:#1a6b8a" onclick="selCor(this)"></div>
+        <div class="cor-op" data-cor="#7d6608" style="background:#7d6608" onclick="selCor(this)"></div>
+      </div>
+      <input type="hidden" id="o-cor" value="#c17f3a">
+    </div>
+    <div class="btn-row right">
+      <button class="btn btn-ghost" onclick="fecharModalObra()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarObra()">Salvar Obra</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Menu Obra (editar/excluir) -->
+<div class="modal-bg" id="modal-menu-obra" onclick="if(event.target===this)fecharMenuObra()">
+  <div class="modal" style="padding-top:16px">
+    <div class="drag-handle"></div>
+    <div id="menu-obra-nome" style="font-size:15px;font-weight:700;margin-bottom:14px;text-align:center"></div>
+    <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;margin-bottom:8px" onclick="editarObraMenu()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Editar dados da obra
+    </button>
+    <button class="btn btn-danger" style="width:100%;justify-content:flex-start" onclick="excluirObraMenu()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      Excluir obra e todos os dados
+    </button>
+  </div>
+</div>
+
+<!-- Modal Foto Ampliada -->
+<div class="foto-modal" id="foto-modal" onclick="fecharFotoModal()">
+  <button class="foto-modal-close" onclick="fecharFotoModal()">✕</button>
+  <img id="foto-modal-img" src="" alt="Foto ampliada">
+</div>
+
+<script>
+'use strict';
+
+// ===================== ESTADO =====================
+let obras = [];
+let obraAtual = null;
+let registros = [];
+let materiais = [];
+let srvForm = [];
+let fotosForm = [];
+let climaForm = '';
+let filtMatAtual = 'todos';
+let editObraId = null;
+let menuObraId = null;
+let geoCache = null;
+
+// ===================== INIT =====================
+window.addEventListener('DOMContentLoaded', function() {
+  obras = ls('do2_obras') || [];
+
+  // Data no header
+  var d = new Date();
+  var el = document.getElementById('header-date');
+  if (el) el.textContent = d.toLocaleDateString('pt-BR', {weekday:'short',day:'2-digit',month:'short'});
+
+  renderObras();
+  iniciarGeo();
+  registrarSW();
+  initInstallBanner();
+
+  // Splash
+  setTimeout(function() {
+    var sp = document.getElementById('splash');
+    if (sp) { sp.classList.add('hide'); setTimeout(function(){ sp.remove(); }, 500); }
+  }, 1200);
+});
+
+// ===================== LOCALSTORAGE =====================
+function ls(k, v) {
+  try {
+    if (v === undefined) { var r = localStorage.getItem(k); return r ? JSON.parse(r) : null; }
+    localStorage.setItem(k, JSON.stringify(v));
+  } catch(e) { console.warn('LS erro:', e); }
+}
+
+// ===================== GEO =====================
+function iniciarGeo() {
+  if (!navigator.geolocation) {
+    setGeoInfo('⚠️', 'GPS não disponível neste dispositivo');
+    return;
+  }
+  setGeoInfo('📍', 'Obtendo localização GPS...');
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      geoCache = { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) };
+      setGeoInfo('✅', 'Localização obtida (±' + geoCache.acc + 'm) — fotos receberão carimbo automático');
+    },
+    function() { setGeoInfo('⚠️', 'Localização indisponível — fotos terão data e hora'); },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+function setGeoInfo(ic, txt) {
+  var ei = document.getElementById('geo-ic'), et = document.getElementById('geo-txt');
+  if (ei) ei.textContent = ic;
+  if (et) et.textContent = txt;
+}
+function obterGeo() {
+  return new Promise(function(res) {
+    if (!navigator.geolocation) { res(geoCache); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { geoCache = {lat:pos.coords.latitude,lon:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)}; res(geoCache); },
+      function() { res(geoCache); },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  });
+}
+async function obterEndereco(lat, lon) {
+  try {
+    var r = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&accept-language=pt-BR');
+    var d = await r.json();
+    var a = d.address || {};
+    var rua = (a.road || a.pedestrian || a.street || '') + (a.house_number ? ', ' + a.house_number : '');
+    var partes = [rua, a.suburb || a.neighbourhood || '', a.city || a.town || a.village || '', a.state_code || ''].filter(Boolean);
+    return partes.join(' — ') || 'Endereço não disponível';
+  } catch(e) { return 'Endereço não disponível'; }
+}
+function carimbrar(src, info) {
+  return new Promise(function(res) {
+    var img = new Image();
+    img.onload = function() {
+      var c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      var h = Math.max(img.height * 0.18, 90);
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(0, img.height - h, img.width, h);
+      ctx.fillStyle = '#c17f3a';
+      ctx.fillRect(0, img.height - h, 5, h);
+      var sc = img.width / 1200;
+      var tG = Math.max(22, Math.round(26*sc)), tM = Math.max(16, Math.round(20*sc)), tP = Math.max(12, Math.round(15*sc)), pd = Math.max(14, Math.round(18*sc));
+      var x = pd + 12, y = img.height - h + pd + tG;
+      ctx.fillStyle = '#fff'; ctx.font = 'bold ' + tG + 'px monospace';
+      ctx.fillText(info.dt, x, y); y += tM + 5;
+      ctx.font = tM + 'px monospace'; ctx.fillStyle = '#e8c88a';
+      var em = Math.floor(img.width * 0.88 / (tM * 0.6));
+      ctx.fillText('📍 ' + (info.end.length > em ? info.end.substring(0, em) + '…' : info.end), x, y); y += tP + 6;
+      ctx.font = tP + 'px monospace'; ctx.fillStyle = '#aaa';
+      ctx.fillText('LAT ' + info.lat + '  LON ' + info.lon + '  ±' + info.acc + 'm', x, y);
+      ctx.font = 'bold ' + tP + 'px monospace'; ctx.fillStyle = '#c17f3a'; ctx.textAlign = 'right';
+      ctx.fillText('DIÁRIO DE OBRA', img.width - pd, img.height - pd);
+      ctx.textAlign = 'left';
+      res(c.toDataURL('image/jpeg', 0.88));
+    };
+    img.onerror = function() { res(src); };
+    img.src = src;
+  });
+}
+
+// ===================== SW + PWA =====================
+function registrarSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  }
+}
+var deferredPrompt = null;
+function initInstallBanner() {
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault(); deferredPrompt = e;
+    if (!ls('pwa_inst')) setTimeout(function(){ document.getElementById('install-banner').classList.add('show'); }, 4000);
+  });
+  window.addEventListener('appinstalled', function() { dispensarBanner(); });
+}
+function instalarApp() {
+  if (!deferredPrompt) {
+    alert('Para instalar no iPhone:\n1. Toque no botão Compartilhar (↑) no Safari\n2. "Adicionar à Tela de Início"\n3. Toque em Adicionar');
+    dispensarBanner(); return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r) { if(r.outcome==='accepted') dispensarBanner(); deferredPrompt=null; });
+}
+function dispensarBanner() {
+  document.getElementById('install-banner').classList.remove('show');
+  ls('pwa_inst', 1);
+}
+
+// Wake Lock
+if ('wakeLock' in navigator) {
+  var wl = null;
+  async function reqWL() { try { wl = await navigator.wakeLock.request('screen'); } catch(e){} }
+  reqWL();
+  document.addEventListener('visibilitychange', function() { if (document.visibilityState==='visible') reqWL(); });
+}
+
+// ===================== TELAS =====================
+function mostrarTela(id) {
+  document.querySelectorAll('.tela').forEach(function(t){ t.classList.remove('ativa'); });
+  document.getElementById(id).classList.add('ativa');
+}
+
+// ===================== OBRAS =====================
+function salvarObras() { ls('do2_obras', obras); }
+
+function renderObras() {
+  // Resumo global
+  var totalDias=0, totalFotos=0, totalPend=0;
+  obras.forEach(function(o) {
+    var regs = ls('do2_r_'+o.id) || [];
+    var mats = ls('do2_m_'+o.id) || [];
+    totalDias += regs.length;
+    totalFotos += regs.reduce(function(t,r){ return t+(r.fotos?r.fotos.length:0); }, 0);
+    totalPend += mats.filter(function(m){ return m.status!=='comprado'; }).length;
+  });
+  var rg = document.getElementById('resumo-global');
+  if (rg) rg.innerHTML = [
+    [obras.length,'Obras'],
+    [totalDias,'Dias registrados'],
+    [totalFotos,'Fotos'],
+    [totalPend,'Mat. pendentes']
+  ].map(function(x){ return '<div class="met"><div class="met-val">'+x[0]+'</div><div class="met-lbl">'+x[1]+'</div></div>'; }).join('');
+
+  var el = document.getElementById('obras-lista');
+  if (!el) return;
+  var html = '';
+
+  if (!obras.length) {
+    html += '<div class="vazio"><div class="vazio-icon">🏗️</div><p>Nenhuma obra cadastrada ainda.<br>Toque em <strong>Nova Obra</strong> para começar.</p></div>';
+  } else {
+    obras.forEach(function(o) {
+      var regs = ls('do2_r_'+o.id) || [];
+      var mats = ls('do2_m_'+o.id) || [];
+      var pend = mats.filter(function(m){ return m.status!=='comprado'; }).length;
+      var ult = regs[0] ? new Date(regs[0].data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '—';
+      html += '<div class="obra-card" onclick="abrirObra(\''+o.id+'\')">'+
+        '<div class="obra-cor" style="background:'+escape_(o.cor||'#c17f3a')+'"></div>'+
+        '<div class="obra-info">'+
+          '<div class="obra-nome">'+escape_(o.nome)+'</div>'+
+          '<div class="obra-end">📍 '+escape_(o.endereco||'Endereço não informado')+'</div>'+
+          '<div class="obra-stats">'+
+            '<span class="obra-stat"><b>'+regs.length+'</b> dias</span>'+
+            '<span class="obra-stat"><b>'+regs.reduce(function(t,r){return t+(r.fotos?r.fotos.length:0);},0)+'</b> fotos</span>'+
+            '<span class="obra-stat"><b>'+pend+'</b> mat. pend.</span>'+
+            '<span class="obra-stat">Último: <b>'+ult+'</b></span>'+
+          '</div>'+
+          (o.tipo||o.responsavel ? '<div style="font-size:11px;color:var(--sec);margin-top:7px">'+escape_(o.tipo||'')+(o.responsavel?' · '+escape_(o.responsavel):'')+'</div>' : '')+
+        '</div>'+
+        '<button class="obra-acoes-btn" onclick="event.stopPropagation();abrirMenuObra(\''+o.id+'\')">⋮</button>'+
+      '</div>';
+    });
+  }
+
+  html += '<div class="nova-obra-btn" onclick="abrirModalObra()">'+
+    '<div style="font-size:32px">＋</div><p>Nova Obra</p></div>';
+  el.innerHTML = html;
+}
+
+function escape_(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function abrirObra(id) {
+  obraAtual = obras.find(function(o){ return o.id===id; });
+  if (!obraAtual) return;
+  registros = ls('do2_r_'+id) || [];
+  materiais = ls('do2_m_'+id) || [];
+  srvForm = []; fotosForm = []; climaForm = ''; filtMatAtual = 'todos';
+
+  document.getElementById('obra-header-nome').textContent = obraAtual.nome;
+  document.getElementById('obra-header-end').textContent = obraAtual.endereco || '';
+  document.getElementById('obra-header-cor').style.background = obraAtual.cor || '#c17f3a';
+  document.documentElement.style.setProperty('--laranja', obraAtual.cor || '#c17f3a');
+
+  // Reset navegação
+  document.querySelectorAll('.bnav-item').forEach(function(b){ b.classList.remove('ativo'); });
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('ativa'); });
+  document.querySelectorAll('.bnav-item')[0].classList.add('ativo');
+  document.getElementById('pg-painel').classList.add('ativa');
+
+  // Reset form
+  document.getElementById('r-data').valueAsDate = new Date();
+  document.getElementById('r-resp').value = obraAtual.responsavel || '';
+  document.getElementById('r-temp').value = '';
+  document.getElementById('r-clima-obs').value = '';
+  document.getElementById('r-obs').value = '';
+  document.getElementById('m-data').valueAsDate = new Date();
+  document.querySelectorAll('.clima-btn').forEach(function(b){ b.className='clima-btn'; });
+  renderSrvForm(); renderFotosForm();
+
+  mostrarTela('tela-obra');
+  renderPainel();
+  renderDiario();
+  renderMats();
+  atualizarBadge();
+  updateFab(true);
+}
+
+function voltarObras() {
+  mostrarTela('tela-obras');
+  document.documentElement.style.setProperty('--laranja', '#c17f3a');
+  obraAtual = null;
+  updateFab(false);
+  renderObras();
+}
+
+// ===================== MODAL OBRA =====================
+function abrirModalObra(id) {
+  editObraId = id || null;
+  document.getElementById('modal-obra-titulo').textContent = id ? 'Editar Obra' : 'Nova Obra';
+  if (id) {
+    var o = obras.find(function(x){ return x.id===id; });
+    if (!o) return;
+    document.getElementById('o-nome').value = o.nome;
+    document.getElementById('o-end').value = o.endereco || '';
+    document.getElementById('o-resp').value = o.responsavel || '';
+    document.getElementById('o-tipo').value = o.tipo || 'Residencial';
+    document.getElementById('o-inicio').value = o.inicio || '';
+    document.getElementById('o-entrega').value = o.entrega || '';
+    document.getElementById('o-cor').value = o.cor || '#c17f3a';
+    document.querySelectorAll('.cor-op').forEach(function(el){ el.classList.toggle('sel', el.dataset.cor===(o.cor||'#c17f3a')); });
+  } else {
+    ['o-nome','o-end','o-resp','o-inicio','o-entrega'].forEach(function(id){ document.getElementById(id).value=''; });
+    document.getElementById('o-tipo').value = 'Residencial';
+    document.getElementById('o-cor').value = '#c17f3a';
+    document.querySelectorAll('.cor-op').forEach(function(el,i){ el.classList.toggle('sel',i===0); });
+  }
+  document.getElementById('modal-obra').classList.add('aberto');
+  setTimeout(function(){ document.getElementById('o-nome').focus(); }, 200);
+}
+function fecharModalObra() { document.getElementById('modal-obra').classList.remove('aberto'); editObraId=null; }
+function selCor(el) {
+  document.querySelectorAll('.cor-op').forEach(function(e){ e.classList.remove('sel'); });
+  el.classList.add('sel');
+  document.getElementById('o-cor').value = el.dataset.cor;
+}
+function salvarObra() {
+  var nome = document.getElementById('o-nome').value.trim();
+  if (!nome) { alert('Informe o nome da obra.'); return; }
+  var dados = {
+    nome: nome,
+    endereco: document.getElementById('o-end').value.trim(),
+    responsavel: document.getElementById('o-resp').value.trim(),
+    tipo: document.getElementById('o-tipo').value,
+    inicio: document.getElementById('o-inicio').value,
+    entrega: document.getElementById('o-entrega').value,
+    cor: document.getElementById('o-cor').value
+  };
+  if (editObraId) {
+    var o = obras.find(function(x){ return x.id===editObraId; });
+    if (o) Object.assign(o, dados);
+  } else {
+    dados.id = 'o' + Date.now();
+    dados.criada = new Date().toISOString();
+    obras.push(dados);
+  }
+  salvarObras(); fecharModalObra(); renderObras();
+}
+
+// Menu obra (⋮)
+function abrirMenuObra(id) {
+  menuObraId = id;
+  var o = obras.find(function(x){ return x.id===id; });
+  if (o) document.getElementById('menu-obra-nome').textContent = o.nome;
+  document.getElementById('modal-menu-obra').classList.add('aberto');
+}
+function fecharMenuObra() { document.getElementById('modal-menu-obra').classList.remove('aberto'); menuObraId=null; }
+function editarObraMenu() { fecharMenuObra(); setTimeout(function(){ abrirModalObra(menuObraId); }, 150); }
+function excluirObraMenu() {
+  var o = obras.find(function(x){ return x.id===menuObraId; });
+  if (!o) return;
+  if (!confirm('Excluir "'+o.nome+'" e TODOS os dados? Esta ação não pode ser desfeita.')) return;
+  localStorage.removeItem('do2_r_'+menuObraId);
+  localStorage.removeItem('do2_m_'+menuObraId);
+  obras = obras.filter(function(x){ return x.id!==menuObraId; });
+  salvarObras(); fecharMenuObra(); renderObras();
+}
+
+// ===================== NAVEGAÇÃO INTERNA =====================
+function irPagina(nome, btn) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('ativa'); });
+  document.querySelectorAll('.bnav-item').forEach(function(b){ b.classList.remove('ativo'); });
+  document.getElementById('pg-'+nome).classList.add('ativa');
+  if (btn) btn.classList.add('ativo');
+  document.getElementById('obra-content').scrollTop = 0;
+  updateFab(nome !== 'registro');
+  if (nome === 'painel') renderPainel();
+  if (nome === 'diario') renderDiario();
+  if (nome === 'compras') renderMats();
+}
+
+// ===================== FAB =====================
+function updateFab(show) {
+  var fab = document.getElementById('fab');
+  if (!obraAtual || !show) { fab.classList.remove('show'); }
+  else { fab.classList.add('show'); }
+}
+function fabAction() {
+  irPagina('registro', document.querySelectorAll('.bnav-item')[1]);
+  document.getElementById('obra-content').scrollTop = 0;
+}
+
+// ===================== CLIMA =====================
+function setClima(tipo, btn) {
+  document.querySelectorAll('.clima-btn').forEach(function(b){ b.className='clima-btn'; });
+  btn.classList.add('on-'+tipo);
+  climaForm = tipo;
+}
+
+// ===================== SERVIÇOS =====================
+function addServico() {
+  var nome = document.getElementById('srv-nome-input').value.trim();
+  if (!nome) { alert('Digite o nome do serviço.'); return; }
+  srvForm.push({ nome: nome, detalhe: document.getElementById('srv-det-input').value.trim(), ok: true });
+  document.getElementById('srv-nome-input').value = '';
+  document.getElementById('srv-det-input').value = '';
+  renderSrvForm();
+  document.getElementById('srv-nome-input').focus();
+}
+function renderSrvForm() {
+  var el = document.getElementById('srvs-lista');
+  if (!srvForm.length) { el.innerHTML = ''; return; }
+  el.innerHTML = srvForm.map(function(s, i) {
+    return '<div class="srv-item '+(s.ok?'feito':'')+'">'+
+      '<input type="checkbox" class="srv-check" '+(s.ok?'checked':'')+' onchange="togSrv('+i+')">'+
+      '<div class="srv-body"><div class="srv-nome">'+escape_(s.nome)+'</div>'+(s.detalhe?'<div class="srv-det">'+escape_(s.detalhe)+'</div>':'')+
+      '</div><button class="btn btn-danger" onclick="delSrv('+i+')">✕</button></div>';
+  }).join('');
+}
+function togSrv(i) { srvForm[i].ok = !srvForm[i].ok; renderSrvForm(); }
+function delSrv(i) { srvForm.splice(i,1); renderSrvForm(); }
+
+// ===================== FOTOS =====================
+async function addFotos(event) {
+  var arqs = Array.from(event.target.files);
+  if (!arqs.length) return;
+  var ua = document.querySelector('.upload-area');
+  ua.innerHTML = '<div class="upload-icon">⏳</div><div class="upload-txt">Processando '+arqs.length+' foto(s)...</div>';
+
+  var geo = await obterGeo();
+  var lat='—', lon='—', acc='—', end='Localização não disponível';
+  if (geo) {
+    lat = geo.lat.toFixed(6); lon = geo.lon.toFixed(6); acc = String(geo.acc);
+    end = await obterEndereco(geo.lat, geo.lon);
+  }
+  var agora = new Date();
+  var info = {
+    dt: agora.toLocaleDateString('pt-BR') + '  ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    end: end, lat: lat, lon: lon, acc: acc
+  };
+
+  for (var i=0; i<arqs.length; i++) {
+    var b64 = await new Promise(function(res) {
+      var rd = new FileReader(); rd.onload = function(e){ res(e.target.result); }; rd.readAsDataURL(arqs[i]);
+    });
+    var carimb = await carimbrar(b64, info);
+    fotosForm.push(carimb);
+  }
+
+  ua.innerHTML = '<div class="upload-icon">📷</div><div class="upload-txt"><strong>Toque para adicionar mais fotos</strong></div>';
+  renderFotosForm();
+  document.getElementById('input-foto').value = '';
+}
+function renderFotosForm() {
+  var el = document.getElementById('fotos-form');
+  el.innerHTML = fotosForm.map(function(src,i){
+    return '<div class="foto-wrap"><img src="'+src+'" onclick="abrirFoto(\''+i+'\',true)"><button class="foto-del" onclick="delFoto('+i+')">✕</button></div>';
+  }).join('');
+}
+function delFoto(i) { fotosForm.splice(i,1); renderFotosForm(); }
+
+// ===================== SALVAR REGISTRO =====================
+function salvarRegistro() {
+  var data = document.getElementById('r-data').value;
+  if (!data) { alert('Selecione a data.'); return; }
+  if (!climaForm) { alert('Selecione o clima do dia.'); return; }
+  if (!srvForm.length) { alert('Adicione pelo menos um serviço executado.'); return; }
+
+  var reg = {
+    id: Date.now(),
+    data: data,
+    responsavel: document.getElementById('r-resp').value.trim(),
+    clima: climaForm,
+    temperatura: document.getElementById('r-temp').value,
+    climaObs: document.getElementById('r-clima-obs').value.trim(),
+    servicos: JSON.parse(JSON.stringify(srvForm)),
+    fotos: fotosForm.slice(),
+    obs: document.getElementById('r-obs').value.trim()
+  };
+
+  registros.unshift(reg);
+  ls('do2_r_'+obraAtual.id, registros);
+  limparForm();
+  renderObras();
+  alert('✅ Registro salvo com sucesso!');
+  irPagina('diario', document.querySelectorAll('.bnav-item')[2]);
+}
+
+function limparForm() {
+  document.getElementById('r-data').valueAsDate = new Date();
+  document.getElementById('r-resp').value = obraAtual ? obraAtual.responsavel||'' : '';
+  document.getElementById('r-temp').value = '';
+  document.getElementById('r-clima-obs').value = '';
+  document.getElementById('r-obs').value = '';
+  document.querySelectorAll('.clima-btn').forEach(function(b){ b.className='clima-btn'; });
+  climaForm = ''; srvForm = []; fotosForm = [];
+  renderSrvForm(); renderFotosForm();
+}
+
+// ===================== DIÁRIO =====================
+function renderDiario() {
+  var el = document.getElementById('diario-lista');
+  if (!el) return;
+  var fd = document.getElementById('fil-data').value;
+  var fs = (document.getElementById('fil-srv').value||'').trim().toLowerCase();
+  var lista = registros;
+  if (fd) lista = lista.filter(function(r){ return r.data===fd; });
+  if (fs) lista = lista.filter(function(r){ return r.servicos.some(function(s){ return s.nome.toLowerCase().includes(fs)||(s.detalhe||'').toLowerCase().includes(fs); }); });
+
+  if (!lista.length) {
+    el.innerHTML = '<div class="vazio"><div class="vazio-icon">📋</div><p>Nenhum registro encontrado.</p></div>';
+    return;
+  }
+
+  var ci = {sol:'☀️ Ensolarado',parcial:'⛅ Parcial',nublado:'☁️ Nublado',chuva:'🌧️ Chuva'};
+  el.innerHTML = lista.map(function(r) {
+    var df = new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    var fotos = r.fotos || [];
+    return '<div class="reg-card">'+
+      '<div class="reg-top">'+
+        '<div><div class="reg-data">'+df+'</div>'+(r.responsavel?'<div class="reg-resp">👷 '+escape_(r.responsavel)+'</div>':'')+
+        '</div>'+
+        '<div style="display:flex;gap:7px;align-items:center;flex-shrink:0">'+
+          '<span class="clima-pill cp-'+r.clima+'">'+(ci[r.clima]||r.clima)+(r.temperatura?' '+r.temperatura+'°C':'')+'</span>'+
+          '<button class="btn btn-danger" onclick="delReg('+r.id+')">✕</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="reg-srvs">'+r.servicos.map(function(s){ return '<div class="reg-srv-item"><b>'+escape_(s.nome)+'</b>'+(s.detalhe?' — '+escape_(s.detalhe):'')+'</div>'; }).join('')+'</div>'+
+      (r.climaObs?'<div style="font-size:12px;color:var(--sec);margin-top:4px">🌡 '+escape_(r.climaObs)+'</div>':'')+
+      (r.obs?'<div class="reg-obs">'+escape_(r.obs)+'</div>':'')+
+      (fotos.length?'<div class="fotos-row">'+fotos.map(function(f,fi){ return '<img src="'+f+'" onclick="abrirFotoReg(\''+r.id+'\','+fi+')">'; }).join('')+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function delReg(id) {
+  if (!confirm('Excluir este registro?')) return;
+  registros = registros.filter(function(r){ return r.id!==id; });
+  ls('do2_r_'+obraAtual.id, registros);
+  renderDiario(); renderPainel(); renderObras();
+}
+
+// ===================== MATERIAIS =====================
+function addMaterial() {
+  var nome = document.getElementById('m-nome').value.trim();
+  if (!nome) { alert('Informe o material.'); return; }
+  var prio = document.getElementById('m-prio').value;
+  materiais.unshift({
+    id: Date.now(), nome: nome,
+    quantidade: document.getElementById('m-qtd').value.trim(),
+    prioridade: prio,
+    dataNecessaria: document.getElementById('m-data').value,
+    fornecedor: document.getElementById('m-forn').value.trim(),
+    obs: document.getElementById('m-obs').value.trim(),
+    status: prio==='alta' ? 'urgente' : 'pendente',
+    criado: new Date().toISOString()
+  });
+  ls('do2_m_'+obraAtual.id, materiais);
+  ['m-nome','m-qtd','m-obs','m-forn'].forEach(function(id){ document.getElementById(id).value=''; });
+  renderMats(); renderPainel(); atualizarBadge();
+}
+
+function filtMat(f, btn) {
+  filtMatAtual = f;
+  document.querySelectorAll('[id^=f-]').forEach(function(b){ b.style.borderBottom=''; });
+  if (btn) btn.style.borderBottom = '2px solid var(--laranja)';
+  renderMats();
+}
+
+function renderMats() {
+  var el = document.getElementById('mats-lista');
+  if (!el) return;
+  var lista = filtMatAtual==='todos' ? materiais : materiais.filter(function(m){ return m.status===filtMatAtual; });
+  if (!lista.length) {
+    el.innerHTML = '<div class="vazio"><div class="vazio-icon">🛒</div><p>Nenhum material encontrado.</p></div>';
+    atualizarBadge(); return;
+  }
+  var pl={alta:'prio-alta',media:'prio-media',baixa:'prio-baixa'};
+  var lb={alta:'🔴 Urgente',media:'🟡 Média',baixa:'🟢 Baixa'};
+  el.innerHTML = lista.map(function(m) {
+    var dn = m.dataNecessaria ? new Date(m.dataNecessaria+'T12:00:00').toLocaleDateString('pt-BR') : '';
+    return '<div class="mat-card">'+
+      '<div class="mat-dot '+m.status+'"></div>'+
+      '<div class="mat-body">'+
+        '<div class="mat-nome">'+escape_(m.nome)+'</div>'+
+        '<div class="mat-badges"><span class="prio-badge '+(pl[m.prioridade]||'prio-media')+'">'+(lb[m.prioridade]||m.prioridade)+'</span>'+
+        (m.status==='comprado'?'<span style="font-size:11px;color:var(--verde);font-weight:700">✔ Comprado</span>':'')+
+        '</div>'+
+        '<div class="mat-info">'+
+          (m.quantidade?'📦 '+escape_(m.quantidade)+'&nbsp; ':'')+
+          (m.fornecedor?'🏪 '+escape_(m.fornecedor)+'&nbsp; ':'')+
+          (dn?'📅 '+dn:'')+
+        '</div>'+
+        (m.obs?'<div style="font-size:12px;color:var(--sec);margin-top:3px">📝 '+escape_(m.obs)+'</div>':'')+
+      '</div>'+
+      '<div class="mat-acoes">'+
+        (m.status!=='comprado'?'<button class="btn btn-success" onclick="marcarComprado('+m.id+')">✔ Comprado</button>':'')+
+        '<button class="btn btn-danger" onclick="delMat('+m.id+')">✕ Excluir</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  atualizarBadge();
+}
+
+function marcarComprado(id) {
+  var m = materiais.find(function(x){ return x.id===id; });
+  if (m) { m.status='comprado'; ls('do2_m_'+obraAtual.id, materiais); renderMats(); renderPainel(); }
+}
+function delMat(id) {
+  if (!confirm('Excluir este item?')) return;
+  materiais = materiais.filter(function(m){ return m.id!==id; });
+  ls('do2_m_'+obraAtual.id, materiais); renderMats(); renderPainel();
+}
+function atualizarBadge() {
+  var n = materiais.filter(function(m){ return m.status!=='comprado'; }).length;
+  var b = document.getElementById('badge-compras');
+  if (b) { b.textContent=n; b.style.display=n?'block':'none'; }
+}
+function exportarLista() {
+  var lista = materiais.filter(function(m){ return m.status!=='comprado'; });
+  if (!lista.length) { alert('Nenhum material pendente para exportar.'); return; }
+  var txt = 'LISTA DE COMPRAS — ' + obraAtual.nome + '\n' + '='.repeat(40) + '\n' + new Date().toLocaleString('pt-BR') + '\n\n';
+  lista.forEach(function(m, i) {
+    txt += (i+1)+'. '+m.nome+'\n';
+    if (m.quantidade) txt += '   Qtd: '+m.quantidade+'\n';
+    if (m.fornecedor) txt += '   Fornecedor: '+m.fornecedor+'\n';
+    txt += '   Prioridade: '+m.prioridade+'\n';
+    if (m.obs) txt += '   Obs: '+m.obs+'\n';
+    txt += '\n';
+  });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+  a.download = 'compras-'+obraAtual.nome.replace(/\s+/g,'-').toLowerCase()+'.txt';
+  a.click();
+}
+
+// ===================== PAINEL =====================
+function renderPainel() {
+  var pend = materiais.filter(function(m){ return m.status!=='comprado'; }).length;
+  var urg = materiais.filter(function(m){ return m.status==='urgente'; }).length;
+  var fotos = registros.reduce(function(t,r){ return t+(r.fotos?r.fotos.length:0); }, 0);
+  var srvs = registros.reduce(function(t,r){ return t+(r.servicos?r.servicos.length:0); }, 0);
+
+  var mel = document.getElementById('obra-mets');
+  if (mel) mel.innerHTML = [
+    [registros.length,'Dias registrados'],
+    [srvs,'Serviços registrados'],
+    [fotos,'Fotos da obra'],
+    [pend,'Mat. pendentes']
+  ].map(function(x){ return '<div class="met"><div class="met-val">'+x[0]+'</div><div class="met-lbl">'+x[1]+'</div></div>'; }).join('');
+
+  var al = document.getElementById('obra-alertas');
+  if (al) {
+    if (urg) al.innerHTML = '<div class="alerta al-urg">🚨 <b>'+urg+' material(is) urgente(s)</b> aguardando compra!</div>';
+    else if (pend) al.innerHTML = '<div class="alerta al-warn">🛒 '+pend+' material(is) pendente(s) na lista de compras.</div>';
+    else al.innerHTML = '<div class="alerta al-ok">✅ Nenhum material pendente. Tudo em ordem!</div>';
+  }
+
+  var ci={sol:'☀️',parcial:'⛅',nublado:'☁️',chuva:'🌧️'};
+  var uel = document.getElementById('painel-ultimos');
+  if (uel) {
+    if (!registros.length) { uel.innerHTML='<div class="vazio"><p>Nenhum registro ainda.</p></div>'; }
+    else {
+      uel.innerHTML = registros.slice(0,4).map(function(r) {
+        var d = new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+        return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--borda)">'+
+          '<span style="font-size:12px;font-weight:700;color:var(--laranja);min-width:54px;font-family:monospace">'+d+'</span>'+
+          '<span style="font-size:20px">'+(ci[r.clima]||'?')+'</span>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-size:13px;font-weight:600">'+r.servicos.length+' serviço(s)'+(r.temperatura?' · '+r.temperatura+'°C':'')+'</div>'+
+            '<div style="font-size:12px;color:var(--sec)">'+(r.fotos?r.fotos.length:0)+' foto(s)'+(r.responsavel?' · '+escape_(r.responsavel):'')+'</div>'+
+          '</div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  var mel2 = document.getElementById('painel-mats');
+  if (mel2) {
+    var pendL = materiais.filter(function(m){ return m.status!=='comprado'; }).slice(0,5);
+    if (!pendL.length) { mel2.innerHTML='<div class="vazio"><p>Nenhum material pendente.</p></div>'; }
+    else {
+      var dc={urgente:'var(--vermelho)',pendente:'var(--amarelo)',comprado:'var(--verde)'};
+      mel2.innerHTML = pendL.map(function(m) {
+        return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--borda)">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:'+(dc[m.status]||'#ccc')+';flex-shrink:0"></span>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div style="font-size:13px;font-weight:600">'+escape_(m.nome)+'</div>'+
+            '<div style="font-size:12px;color:var(--sec)">'+(m.quantidade||'')+(m.fornecedor?' · '+escape_(m.fornecedor):'')+'</div>'+
+          '</div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+}
+
+// ===================== FOTO MODAL =====================
+var fotoModalData = [];
+function abrirFoto(idx, isForm) {
+  var src = isForm ? fotosForm[idx] : fotoModalData[idx];
+  if (!src) return;
+  document.getElementById('foto-modal-img').src = src;
+  document.getElementById('foto-modal').classList.add('aberto');
+}
+function abrirFotoReg(regId, idx) {
+  var r = registros.find(function(x){ return x.id==regId; });
+  if (!r || !r.fotos) return;
+  fotoModalData = r.fotos;
+  abrirFoto(idx, false);
+}
+function fecharFotoModal() {
+  document.getElementById('foto-modal').classList.remove('aberto');
+  document.getElementById('foto-modal-img').src = '';
+}
+
+// ESC para fechar modais
+document.addEventListener('keydown', function(e) {
+  if (e.key==='Escape') { fecharModalObra(); fecharMenuObra(); fecharFotoModal(); }
+});
+</script>
+</body>
+</html>
