@@ -402,6 +402,16 @@ a{color:inherit;text-decoration:none}
           <div class="field" style="margin:0"><label>Buscar serviço</label><input type="text" id="fil-srv" placeholder="Palavra-chave..." oninput="renderDiario()"></div>
         </div>
       </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="gerarPDF()" style="flex:1;min-width:140px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Exportar PDF
+        </button>
+        <button class="btn btn-ghost" onclick="compartilharDiario()" style="flex:1;min-width:140px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Compartilhar
+        </button>
+      </div>
       <div id="diario-lista"></div>
     </div>
 
@@ -524,7 +534,46 @@ a{color:inherit;text-decoration:none}
   </div>
 </div>
 
-<!-- Modal Foto Ampliada -->
+<!-- Modal Compartilhar -->
+<div class="modal-bg" id="modal-compartilhar" onclick="if(event.target===this)fecharCompartilhar()">
+  <div class="modal">
+    <div class="drag-handle"></div>
+    <div class="modal-title">
+      <span>Compartilhar Diário</span>
+      <button class="modal-close" onclick="fecharCompartilhar()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--sec);margin-bottom:16px">Escolha como deseja compartilhar o diário da obra <strong id="comp-obra-nome"></strong>:</p>
+    <button class="btn btn-primary" style="width:100%;justify-content:flex-start;margin-bottom:10px" onclick="compartilharWhatsApp()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.989.574 3.842 1.566 5.412L2 22l4.704-1.542A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
+      Enviar pelo WhatsApp
+    </button>
+    <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;margin-bottom:10px" onclick="compartilharEmail()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Enviar por E-mail
+    </button>
+    <button class="btn btn-ghost" style="width:100%;justify-content:flex-start;margin-bottom:10px" onclick="copiarLinkDiario()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Copiar link do app
+    </button>
+    <div class="divider"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:flex-start" onclick="gerarPDFeCompartilhar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Gerar PDF e compartilhar
+    </button>
+  </div>
+</div>
+
+<!-- Modal PDF gerando -->
+<div class="modal-bg" id="modal-pdf-loading">
+  <div class="modal" style="text-align:center;padding:32px 24px">
+    <div style="font-size:48px;margin-bottom:14px">📄</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px">Gerando PDF...</div>
+    <div style="font-size:13px;color:var(--sec)" id="pdf-loading-txt">Preparando o diário da obra</div>
+    <div style="margin-top:18px;height:4px;background:var(--borda);border-radius:2px;overflow:hidden">
+      <div id="pdf-progress" style="height:100%;width:0;background:var(--laranja);border-radius:2px;transition:width .3s"></div>
+    </div>
+  </div>
+</div>
 <div class="foto-modal" id="foto-modal" onclick="fecharFotoModal()">
   <button class="foto-modal-close" onclick="fecharFotoModal()">✕</button>
   <img id="foto-modal-img" src="" alt="Foto ampliada">
@@ -1191,6 +1240,268 @@ function renderPainel() {
     }
   }
 }
+
+// ===================== COMPARTILHAR =====================
+function compartilharDiario() {
+  document.getElementById('comp-obra-nome').textContent = obraAtual ? '"'+obraAtual.nome+'"' : '';
+  document.getElementById('modal-compartilhar').classList.add('aberto');
+}
+function fecharCompartilhar() { document.getElementById('modal-compartilhar').classList.remove('aberto'); }
+
+function montarTextoResumo() {
+  var linhas = [];
+  linhas.push('📋 DIÁRIO DE OBRA — ' + obraAtual.nome);
+  linhas.push('📍 ' + (obraAtual.endereco || 'Endereço não informado'));
+  linhas.push('📅 Gerado em: ' + new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'}));
+  linhas.push('');
+  var ci = {sol:'☀️',parcial:'⛅',nublado:'☁️',chuva:'🌧️'};
+  registros.slice(0,10).forEach(function(r, i) {
+    var d = new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+    linhas.push('━━━━━━━━━━━━━━━━━━');
+    linhas.push((ci[r.clima]||'') + ' ' + d + (r.temperatura?' · '+r.temperatura+'°C':'') + (r.responsavel?' · '+r.responsavel:''));
+    r.servicos.forEach(function(s){ linhas.push('  ✔ '+s.nome+(s.detalhe?' — '+s.detalhe:'')); });
+    if (r.obs) linhas.push('  📝 '+r.obs);
+    linhas.push('  📷 '+((r.fotos||[]).length)+' foto(s)');
+  });
+  if (registros.length > 10) linhas.push('... e mais '+(registros.length-10)+' registro(s)');
+  var pend = materiais.filter(function(m){ return m.status!=='comprado'; });
+  if (pend.length) {
+    linhas.push(''); linhas.push('🛒 MATERIAIS PENDENTES ('+pend.length+'):');
+    pend.slice(0,8).forEach(function(m){ linhas.push('  • '+m.nome+(m.quantidade?' — '+m.quantidade:'')); });
+  }
+  return linhas.join('\n');
+}
+
+function compartilharWhatsApp() {
+  fecharCompartilhar();
+  var txt = montarTextoResumo();
+  var url = 'https://wa.me/?text=' + encodeURIComponent(txt);
+  window.open(url, '_blank');
+}
+function compartilharEmail() {
+  fecharCompartilhar();
+  var txt = montarTextoResumo();
+  var assunto = 'Diário de Obra — ' + obraAtual.nome;
+  var url = 'mailto:?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(txt);
+  window.location.href = url;
+}
+function copiarLinkDiario() {
+  fecharCompartilhar();
+  var link = window.location.href;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function(){ alert('✅ Link copiado!\n\nCompartilhe esse link para que outras pessoas acessem o app:\n'+link); });
+  } else {
+    prompt('Copie o link abaixo:', link);
+  }
+}
+function gerarPDFeCompartilhar() {
+  fecharCompartilhar();
+  setTimeout(function(){ gerarPDF(true); }, 300);
+}
+
+// ===================== GERAR PDF =====================
+function setPdfProgress(p, txt) {
+  document.getElementById('pdf-progress').style.width = p+'%';
+  if (txt) document.getElementById('pdf-loading-txt').textContent = txt;
+}
+
+async function gerarPDF(compartilhar) {
+  if (!registros.length) { alert('Nenhum registro para exportar.'); return; }
+
+  // Mostrar loading
+  document.getElementById('modal-pdf-loading').classList.add('aberto');
+  setPdfProgress(5, 'Preparando o diário...');
+  await sleep(100);
+
+  try {
+    var ci = {sol:'☀️ Ensolarado',parcial:'⛅ Parcial',nublado:'☁️ Nublado',chuva:'🌧️ Chuva'};
+    var cor = obraAtual.cor || '#c17f3a';
+
+    // Montar HTML do PDF
+    setPdfProgress(20, 'Montando layout...');
+    await sleep(100);
+
+    var fds = document.getElementById('fil-data').value;
+    var fss = (document.getElementById('fil-srv').value||'').trim().toLowerCase();
+    var lista = registros;
+    if (fds) lista = lista.filter(function(r){ return r.data===fds; });
+    if (fss) lista = lista.filter(function(r){ return r.servicos.some(function(s){ return s.nome.toLowerCase().includes(fss); }); });
+
+    setPdfProgress(35, 'Processando '+lista.length+' registro(s)...');
+    await sleep(100);
+
+    // Converter fotos para base64 inline (já estão em base64)
+    var totalFotos = lista.reduce(function(t,r){ return t+(r.fotos?r.fotos.length:0); },0);
+    var incluirFotos = totalFotos <= 30; // limita para não gerar PDF gigante
+
+    setPdfProgress(50, 'Gerando HTML do relatório...');
+    await sleep(100);
+
+    var registrosHTML = lista.map(function(r, ri) {
+      var df = new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+      var srvHTML = r.servicos.map(function(s){
+        return '<div style="padding:4px 0;border-bottom:1px solid #f0ede7;display:flex;align-items:flex-start;gap:8px">'+
+          '<span style="color:'+cor+';font-size:12px;margin-top:2px">✔</span>'+
+          '<div><span style="font-weight:600">'+esc(s.nome)+'</span>'+(s.detalhe?'<span style="color:#888;font-size:12px"> — '+esc(s.detalhe)+'</span>':'')+'</div></div>';
+      }).join('');
+      var fotosHTML = '';
+      if (incluirFotos && r.fotos && r.fotos.length) {
+        fotosHTML = '<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📷 Fotos ('+r.fotos.length+')</div>'+
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">'+
+          r.fotos.map(function(f){ return '<img src="'+f+'" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid #ddd">'; }).join('')+
+          '</div></div>';
+      } else if (!incluirFotos && r.fotos && r.fotos.length) {
+        fotosHTML = '<div style="margin-top:8px;font-size:12px;color:#888;background:#f8f6f2;padding:7px 10px;border-radius:6px">📷 '+r.fotos.length+' foto(s) — omitidas no PDF por volume (>30 fotos)</div>';
+      }
+      return '<div style="margin-bottom:20px;padding:16px;border:1px solid #e0dbd3;border-radius:10px;border-left:4px solid '+cor+';page-break-inside:avoid">'+
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:8px">'+
+          '<div>'+
+            '<div style="font-size:14px;font-weight:700;color:'+cor+'">'+df+'</div>'+
+            (r.responsavel?'<div style="font-size:12px;color:#888;margin-top:2px">👷 '+esc(r.responsavel)+'</div>':'')+
+          '</div>'+
+          '<div style="text-align:right;flex-shrink:0">'+
+            '<div style="font-size:12px;background:#f8f6f2;padding:3px 10px;border-radius:10px;font-weight:600;color:#555">'+(ci[r.clima]||r.clima)+(r.temperatura?' · '+r.temperatura+'°C':'')+'</div>'+
+            (r.climaObs?'<div style="font-size:11px;color:#aaa;margin-top:2px">'+esc(r.climaObs)+'</div>':'')+
+          '</div>'+
+        '</div>'+
+        '<div style="margin-bottom:10px">'+
+          '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Serviços executados</div>'+
+          srvHTML+
+        '</div>'+
+        (r.obs?'<div style="font-size:13px;color:#555;background:#fdf9f4;padding:9px 11px;border-radius:7px;margin-top:8px;border-left:3px solid '+cor+'">📝 '+esc(r.obs)+'</div>':'')+
+        fotosHTML+
+      '</div>';
+    }).join('');
+
+    // Materiais pendentes
+    var matsHTML = '';
+    var pendM = materiais.filter(function(m){ return m.status!=='comprado'; });
+    if (pendM.length) {
+      matsHTML = '<div style="page-break-before:always;margin-top:28px">'+
+        '<h2 style="font-size:16px;font-weight:700;color:'+cor+';margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid '+cor+'">🛒 Lista de Materiais Pendentes</h2>'+
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<tr style="background:'+cor+';color:#fff"><th style="padding:8px 10px;text-align:left">Material</th><th style="padding:8px 10px;text-align:left">Qtd</th><th style="padding:8px 10px;text-align:left">Prioridade</th><th style="padding:8px 10px;text-align:left">Necessário</th></tr>'+
+        pendM.map(function(m, i){
+          var bg = i%2===0 ? '#fff' : '#fdf9f4';
+          var pc = {alta:'#c0392b',media:'#d4881a',baixa:'#2e7d5c'}[m.prioridade]||'#888';
+          var dn = m.dataNecessaria ? new Date(m.dataNecessaria+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+          return '<tr style="background:'+bg+'">'+
+            '<td style="padding:7px 10px;border-bottom:1px solid #f0ede7;font-weight:600">'+esc(m.nome)+(m.obs?'<div style="font-size:11px;color:#888">'+esc(m.obs)+'</div>':'')+
+            (m.fornecedor?'<div style="font-size:11px;color:#888">🏪 '+esc(m.fornecedor)+'</div>':'')+
+            '</td>'+
+            '<td style="padding:7px 10px;border-bottom:1px solid #f0ede7">'+esc(m.quantidade||'—')+'</td>'+
+            '<td style="padding:7px 10px;border-bottom:1px solid #f0ede7;color:'+pc+';font-weight:700">'+m.prioridade.toUpperCase()+'</td>'+
+            '<td style="padding:7px 10px;border-bottom:1px solid #f0ede7">'+dn+'</td>'+
+          '</tr>';
+        }).join('')+
+        '</table></div>';
+    }
+
+    var totalDias = lista.length;
+    var totalSrvs = lista.reduce(function(t,r){ return t+(r.servicos?r.servicos.length:0); },0);
+    var totalFotosL = lista.reduce(function(t,r){ return t+(r.fotos?r.fotos.length:0); },0);
+
+    var htmlPDF = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1c1a17;background:#fff;padding:28px 32px}
+  @media print{body{padding:0} .no-print{display:none}}
+  @page{margin:18mm 14mm;size:A4}
+</style>
+</head><body>
+<!-- CAPA -->
+<div style="border-bottom:3px solid ${cor};padding-bottom:18px;margin-bottom:24px">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:4px">Diário de Obra</div>
+      <h1 style="font-size:24px;font-weight:800;color:${cor};margin-bottom:6px">${esc(obraAtual.nome)}</h1>
+      <div style="font-size:13px;color:#666;margin-bottom:3px">📍 ${esc(obraAtual.endereco||'Endereço não informado')}</div>
+      ${obraAtual.responsavel?`<div style="font-size:13px;color:#666">👷 ${esc(obraAtual.responsavel)}</div>`:''}
+      ${obraAtual.tipo?`<div style="font-size:13px;color:#666">🏗️ ${esc(obraAtual.tipo)}</div>`:''}
+    </div>
+    <div style="text-align:right;flex-shrink:0;font-size:12px;color:#aaa">
+      <div style="font-weight:700;color:#555">Gerado em</div>
+      <div>${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+      <div style="margin-top:4px">${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  </div>
+  <!-- Resumo -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px">
+    ${[['📅',totalDias,'Dias registrados'],['✔',totalSrvs,'Serviços'],['📷',totalFotosL,'Fotos'],['🛒',pendM.length,'Mat. pendentes']].map(function(x){
+      return '<div style="background:#f8f6f2;border-radius:8px;padding:10px;text-align:center">'+
+        '<div style="font-size:18px">'+x[0]+'</div>'+
+        '<div style="font-size:20px;font-weight:800;color:'+cor+'">'+x[1]+'</div>'+
+        '<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px">'+x[2]+'</div>'+
+      '</div>';
+    }).join('')}
+  </div>
+</div>
+<!-- REGISTROS -->
+<h2 style="font-size:16px;font-weight:700;color:${cor};margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid ${cor}">📋 Registros Diários</h2>
+${registrosHTML}
+${matsHTML}
+<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e0dbd3;font-size:11px;color:#aaa;text-align:center">
+  Diário de Obra — ${esc(obraAtual.nome)} — Gerado em ${new Date().toLocaleString('pt-BR')}
+</div>
+</body></html>`;
+
+    setPdfProgress(80, 'Abrindo para impressão/salvar...');
+    await sleep(200);
+
+    // Abrir em nova janela e imprimir
+    var janela = window.open('', '_blank', 'width=900,height=700');
+    if (!janela) {
+      // Fallback: baixar como HTML
+      var blob = new Blob([htmlPDF], {type:'text/html;charset=utf-8'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'diario-'+obraAtual.nome.replace(/\s+/g,'-').toLowerCase()+'.html';
+      a.click();
+      URL.revokeObjectURL(url);
+      setPdfProgress(100, 'Arquivo baixado!');
+      await sleep(800);
+      document.getElementById('modal-pdf-loading').classList.remove('aberto');
+      alert('ℹ️ Popup bloqueado!\n\nO arquivo foi baixado como HTML.\nAbra-o no navegador e use Ctrl+P (ou Compartilhar → Imprimir) para salvar como PDF.');
+      return;
+    }
+
+    janela.document.write(htmlPDF);
+    janela.document.close();
+
+    setPdfProgress(95, 'Pronto! Abrindo impressão...');
+    await sleep(600);
+    document.getElementById('modal-pdf-loading').classList.remove('aberto');
+
+    janela.focus();
+    setTimeout(function(){
+      janela.print();
+      if (compartilhar) {
+        setTimeout(function(){ compartilharAposImpressao(); }, 1000);
+      }
+    }, 800);
+
+  } catch(e) {
+    document.getElementById('modal-pdf-loading').classList.remove('aberto');
+    alert('Erro ao gerar PDF: ' + e.message);
+    console.error(e);
+  }
+}
+
+function compartilharAposImpressao() {
+  if (navigator.share) {
+    navigator.share({
+      title: 'Diário de Obra — ' + obraAtual.nome,
+      text: montarTextoResumo(),
+      url: window.location.href
+    }).catch(function(){});
+  } else {
+    compartilharDiario();
+  }
+}
+
+function sleep(ms) { return new Promise(function(res){ setTimeout(res,ms); }); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ===================== FOTO MODAL =====================
 var fotoModalData = [];
